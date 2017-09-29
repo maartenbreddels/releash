@@ -5,8 +5,8 @@ from contextlib import contextmanager
 
 import semver
 
-__version_tuple__ = (0, 1, 0, 'alpha.0')
-__version__ = '0.1.0-alpha.0'
+__version_tuple__ = (0, 1, 0, 'alpha.1', None)
+__version__ = '0.1.0-alpha.1'
 
 semver_bump = [semver.bump_major, semver.bump_minor, semver.bump_patch, semver.bump_prerelease, semver.bump_build]
 def error(msg, *args, **kwargs):
@@ -22,6 +22,7 @@ def is_available(cmd):
 def debug(msg, *args, **kwargs):
     print(msg.format(*args, **kwargs))
 def execute(cmd):
+    print(cmd)
     return_value = os.system(cmd)
     if return_value != 0:
         error("%r exit with error code: %s" % (cmd, return_value))
@@ -39,9 +40,12 @@ def backupped(filename):
     finally:
         os.remove(backup)
 
-    
+
+# TODO: use OrderedDict    
 packages = []
 package_map = {}
+package_names = []
+
 class VersionSource(object):
     def __init__(self, package, version_file=None):
         self.package = package
@@ -63,7 +67,7 @@ class VersionSource(object):
 
     def print(self, indent=0):
         print("\t" * indent + "version: {version}".format(**self.__dict__))
-        print("\t" * indent + "version_string: {version_string}".format(**self.__dict__))
+        print("\t" * indent + "file: {version_file}".format(**self.__dict__))
 
     def bump(self, what, dryrun=False, force=False):
         old_version = self.version
@@ -124,13 +128,13 @@ class VersionTargetGitTag(object):
     def save(self, dryrun=False, force=False):
         if self.version_source is None:
             error('no version set')
-        cmd = "git --tag %s" % str(self.version_source)
+        cmd = "git tag %s" % str(self.version_source)
         if force:
             cmd += " -f"
         if dryrun:
             print(cmd)
         else:
-            excute(cmd)
+            execute(cmd)
 
 
 class ReleaseTargetSourceDist:
@@ -138,11 +142,25 @@ class ReleaseTargetSourceDist:
         self.package = package
 
     def release(self, force=False, dryrun=False):
-        cmd = "cd {path}; python setup.py sdist".format(**self.package.__dict__)
+        cmd = "cd {path}; python setup.py sdist upload".format(**self.package.__dict__)
         if dryrun:
             print(cmd)
         else:
-            excute(cmd)
+            execute(cmd)
+
+class ReleaseTargetGitPush:
+    def __init__(self, package):
+        self.package = package
+
+    def release(self, force=False, dryrun=False):
+        if force:
+            cmd = "git push --force && git push --tags --force"
+        else:
+            cmd = "git push && git push --tags"
+        if dryrun:
+            print(cmd)
+        else:
+            execute(cmd)
 
 def replace_in_file(filename, *replacements, dryrun=False):
     newlines = []
@@ -239,7 +257,7 @@ class Package:
         print("\t" * indent + "name: {name}".format(**self.__dict__))
         print("\t" * indent + "path: {path}".format(**self.__dict__))
         print("\t" * indent + "package_name: {package_name}".format(**self.__dict__))
-        print("\t" * indent + "version:")
+        print("\t" * indent + "version: ")
         self.version_source.print(indent=indent+1)
 
     def release(self, dryrun=False, force=False):
@@ -258,6 +276,7 @@ def add_package(path, name=None, package_name=None, version_source=None):
     package_name = package_name or name
     package = Package(path, name, package_name, version_source=version_source)
     packages.append(package)
+    package_names.append(name)
     package_map[name] = package
     return package
 
@@ -280,6 +299,7 @@ def main(argv=sys.argv):
     subparsers = parser.add_subparsers(help='type of command', dest="task")
 
     parser_list = subparsers.add_parser('list', help='list packages')
+    parser_set = subparsers.add_parser('set', help='set versions')
     parser_bump = subparsers.add_parser('bump', help='bump version nr')
     parser_release = subparsers.add_parser('release', help='release software')
 
@@ -293,6 +313,10 @@ def main(argv=sys.argv):
     parser_release.add_argument('--dry-run', '-n', action='store_true', default=False, help="do not execute, but print")
     parser_release.add_argument('--force', '-f', action='store_true', default=False, help="force actions (such as tagging)")
 
+    parser_set.add_argument('packages', help="which packages", nargs="*")
+    parser_set.add_argument('--dry-run', '-n', action='store_true', default=False, help="do not execute, but print")
+    parser_set.add_argument('--force', '-f', action='store_true', default=False, help="force actions (such as tagging)")
+
 
     args = parser.parse_args(argv[1:])
 
@@ -301,18 +325,17 @@ def main(argv=sys.argv):
     if args.task == "list":
         cmd_list(args)
     elif args.task == "bump":
-        for package in package_iter(args.packages):
+        for package in package_iter(args.packages or package_names):
             package.bump(args.what, dryrun=args.dry_run, force=args.force)
+    elif args.task == "set":
+        for package in package_iter(args.packages or package_names):
+            for target in package.version_targets:
+                target.version_source = package.version_source
+                target.save(dryrun=args.dry_run, force=args.force)
     elif args.task == "release":
-        for package in package_iter(args.packages):
+        for package in package_iter(args.packages or package_names):
             package.release(dryrun=args.dry_run, force=args.force)
 
-
-# core = add_package("packages/vaex-core", "vaex-core", "vaex")
-# core.version_targets.append(VersionTarget(core))
-# core.version_targets.append(VersionTargetGitTag(core))
-# core.release_targets.append(ReleaseTargetSourceDist(core))
-# core.release_targets.append(ReleaseTargetCondaForge(core, os.path.expanduser('~/src/vaex-feedstock/')))
 
 if __name__ == "__main__":
     main()
