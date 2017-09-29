@@ -5,5 +5,4 @@ myself.version_targets.append(VersionTargetGitTag(myself))
 myself.version_targets.append(VersionTarget(myself, 'releash.py'))
 myself.release_targets.append(ReleaseTargetSourceDist(myself))
 myself.release_targets.append(ReleaseTargetGitPush(myself))
-
-#myself.release_targets.append(ReleaseTargetCondaForge(myself, os.path.expanduser('~/src/vaex-feedstock/')))
+myself.release_targets.append(ReleaseTargetCondaForge(myself, 'releash-fake-feedstock'))

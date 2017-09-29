@@ -5,8 +5,8 @@ from contextlib import contextmanager
 
 import semver
 
-__version_tuple__ = (0, 1, 0, 'alpha.1', None)
-__version__ = '0.1.0-alpha.1'
+__version_tuple__ = (0, 1, 0, 'alpha.2', None)
+__version__ = '0.1.0-alpha.2'
 
 semver_bump = [semver.bump_major, semver.bump_minor, semver.bump_patch, semver.bump_prerelease, semver.bump_build]
 def error(msg, *args, **kwargs):
@@ -168,20 +168,29 @@ def replace_in_file(filename, *replacements, dryrun=False):
     with open(filename) as f:
         lines = f.readlines()
         for line in lines:
+            replacement_done = False
             for i, (regex, replacement) in enumerate(replacements):
                 if re.match(regex, line):
                     if found[i]:
                         error('{} -> {} found multiple files in file {}', regex, replacement, filename)
+                    if replacement[-1] != '\n':
+                        replacement += '\n'
                     newlines.append(replacement)
                     found[i] = True
+                    replacement_done = True
+            if not replacement_done:
+                newlines.append(line)
     for i, (regex, replacement) in enumerate(replacements):
         if not found[i]:
             error('{} -> {} not found in file {}', regex, replacement, filename)
 
+    content = ''.join(newlines)
     if not dryrun:
         with backupped(filename):
             with open(filename, 'w') as f:
-                f.write(''.join(newlines))
+                f.write(content)
+    else:
+        debug('would write: \n{}', content)
     print('updating', filename)
 
 class ReleaseTargetCondaForge:
@@ -209,13 +218,13 @@ class ReleaseTargetCondaForge:
         if dryrun:
             print(cmd)
         else:
-            excute(cmd)
+            execute(cmd)
 
         cmd = "cd {feedstock_path} && git checkout -b {branch}".format(**self.__dict__)
         if dryrun:
             print(cmd)
         else:
-            excute(cmd)
+            execute(cmd)
         filename = os.path.join(self.feedstock_path, 'recipe', 'meta.yaml')
         replace_in_file(filename, 
             ('{% set version =', '{%% set version = "%s" %%}' % version_normalized),
@@ -226,7 +235,13 @@ class ReleaseTargetCondaForge:
         if dryrun:
             print(cmd)
         else:
-            excute(cmd)
+            execute(cmd)
+
+        cmd = "cd {feedstock_path}; git push origin {branch}'".format(**self.__dict__)
+        if dryrun:
+            print(cmd)
+        else:
+            execute(cmd)
 
         cmd = "cd {feedstock_path}; hub pull-request -m 'Update to version {version}'".format(version=str(self.package.version_source), **self.__dict__)
 
@@ -234,7 +249,7 @@ class ReleaseTargetCondaForge:
             if dryrun:
                 print(cmd)
             else:
-                excute(cmd)
+                execute(cmd)
         else:
             print("*** the command line tool 'hub' is not aviable, so could not execute:")
             print(cmd)
