@@ -5,8 +5,8 @@ from contextlib import contextmanager
 
 import semver
 
-__version_tuple__ = (0, 1, 0, 'alpha.3', None)
-__version__ = '0.1.0-alpha.3'
+__version_tuple__ = (0, 1, 0, 'alpha.4', None)
+__version__ = '0.1.0-alpha.4'
 
 semver_bump = [semver.bump_major, semver.bump_minor, semver.bump_patch, semver.bump_prerelease, semver.bump_build]
 def error(msg, *args, **kwargs):
