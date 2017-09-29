@@ -237,7 +237,7 @@ class ReleaseTargetCondaForge:
         else:
             execute(cmd)
 
-        cmd = "cd {feedstock_path}; git push origin {branch}'".format(**self.__dict__)
+        cmd = "cd {feedstock_path}; git push origin {branch}".format(**self.__dict__)
         if dryrun:
             print(cmd)
         else:
