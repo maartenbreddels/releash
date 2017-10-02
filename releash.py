@@ -233,7 +233,7 @@ class VersionSourceAndTargetHpp(VersionSource):
         for i in range(3):
             if version[i] is None:
                 error('Expected to find a {type} version number line starting with: {pattern}',
-                      type=postfixes[i], pattern=patterns[i])
+                      type=self.postfixes[i], pattern=self.patterns[i])
         self.version = [k for k in version if k is not None]
 
     def save(self):
