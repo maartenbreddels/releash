@@ -268,7 +268,7 @@ class VersionTarget(object):
                 with open(self.version_file, 'w') as f:
                     f.write(''.join(newlines))
         info('wrote to {}', self.version_file)
-        execute('git commit -m \'Release {version}\' {files}'.format(version=self.version_source, files=self.version_file))
+        execute('git commit -m "Release {version}" {files}'.format(version=self.version_source, files=self.version_file))
 
 class ReleaseTargetGitTagVersion(object):
     def __init__(self, version_source, prefix='v', postfix='', annotate=True, msg='Release {version}'):
