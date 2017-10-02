@@ -26,6 +26,7 @@ dry_run = False
 force = False # force commands, such as tagging
 verbose = False
 quiet = False
+interactive = False
 semver_bump = [semver.bump_major, semver.bump_minor, semver.bump_patch, semver.bump_prerelease, semver.bump_build]
 
 def error(msg, *args, **kwargs):
@@ -85,8 +86,19 @@ def test(cmd):
     return os.system(cmd +' &> /dev/null') == 0
 
 def execute(cmd):
-    if not quiet:
-        print(cmd)
+    if interactive:
+        while True:
+            answer = input('Run command: %s\nyes,no,quit: [y/n/q]' % cmd)
+            print(answer)
+            if answer == 'y':
+                break
+            elif answer == 'n':
+                return
+            elif answer == 'q':
+                sys.exit(0)
+    else:
+        if not quiet:
+            print(cmd)
     if not dry_run:
         return_value = os.system(cmd)
         if return_value != 0:
@@ -507,7 +519,7 @@ def package_iter(package_names):
         yield package, i == len(package_names) - 1
 def main(argv=sys.argv):
     import argparse
-    global dry_run, force, verbose, quiet
+    global dry_run, force, verbose, quiet, interactive
     parser = argparse.ArgumentParser(argv[0])
 
     subparsers = parser.add_subparsers(help='type of command', dest="task")
@@ -525,6 +537,7 @@ def main(argv=sys.argv):
     for subparser in action_subparsers:
         subparser.add_argument('--dry-run', '-n', action='store_true', default=False, help="do not execute, but print")
         subparser.add_argument('--force', '-f', action='store_true', default=False, help="force actions (such as tagging)")
+        subparser.add_argument('--interactive', '-i', action='store_true', default=False, help="ask for confirmation before running")
     for subparser in action_subparsers + [parser_status]:
         subparser.add_argument('--verbose', '-v', action='store_true', default=False, help="more output")
         subparser.add_argument('--quiet', '-q', action='store_true', default=False, help="less output")
@@ -549,6 +562,8 @@ def main(argv=sys.argv):
         dry_run = args.dry_run
     if hasattr(args, 'force'):
         force = args.force
+    if hasattr(args, 'interactive'):
+        interactive = args.interactive
     verbose = args.verbose
     quiet = args.quiet
     if args.task == "list":
