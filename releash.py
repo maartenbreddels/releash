@@ -10,7 +10,7 @@ import semver
 import time
 try:
     from urllib import urlretrieve # py2
-    from urllib import HTTPError
+    HTTPError = Exception
 except ImportError:
     from urllib.request import urlretrieve # py3
     from urllib.error import HTTPError
