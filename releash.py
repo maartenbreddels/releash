@@ -450,9 +450,10 @@ class Package:
 
     def count_untracked_files(self):
         # use exit code to count untracked files
-        cmd = 'git ls-files --other --exclude-standard --directory {path} | wc -l'.format(path=self.path)
+        cmd = 'git ls-files --other --exclude-standard --directory {path}'.format(path=self.path)
         result = os.popen(cmd).read()
-        return int(result)
+        # count non empty lines
+        return len([k for k in result.split('\n') if k.strip()])
 
     def print_status(self):
         clean = self.is_clean()
