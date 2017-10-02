@@ -14,8 +14,8 @@ except ImportError:
     from urllib.request import urlretrieve # py3
     from urllib.error import HTTPError
 
-__version_tuple__ = (0, 1, 0, 'alpha.4', None)
-__version__ = '0.1.0-alpha.4'
+__version_tuple__ = (0, 1, 1, None, None)
+__version__ = '0.1.1'
 
 try:
     input = raw_input # py2/3
