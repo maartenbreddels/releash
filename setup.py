@@ -1,10 +1,12 @@
-import os, imp
+import os, re
 from setuptools import setup
 
 dirname = os.path.dirname(__file__)
 releash_path = os.path.join(dirname, "releash.py")
-version = imp.load_source('releash', releash_path).__version__
-
+with open(releash_path) as f:
+    version_match = re.search(r"^__version__ = ['\"]([^'\"]*)['\"]",
+                              f.read(), re.M)
+version = version_match.group(1)
 
 setup(
     name='releash',
@@ -13,7 +15,7 @@ setup(
     url='https://github.com/maartenbreddels/releash',
     author='Maarten A. Breddels',
     author_email='maartenbreddels@gmail.com',
-    install_requires=[],
+    install_requires=['semver'],
     license='MIT',
     py_modules=['releash'],
     entry_points = {
