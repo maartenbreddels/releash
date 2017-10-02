@@ -513,7 +513,6 @@ class Package:
         return test('git diff --exit-code {path}'.format(**self.__dict__))
 
     def count_untracked_files(self):
-        # use exit code to count untracked files
         cmd = 'git ls-files --other --exclude-standard --directory {path}'.format(
             path=self.path)
         result = os.popen(cmd).read()
@@ -616,25 +615,19 @@ def main(argv=sys.argv):
         subparser.add_argument('--interactive', '-i', action='store_true',
                                default=False, help="ask for confirmation before running")
     for subparser in action_subparsers + [parser_status]:
-        subparser.add_argument(
-            '--verbose', '-v', action='store_true', default=False, help="more output")
-        subparser.add_argument(
-            '--quiet', '-q', action='store_true', default=False, help="less output")
+        subparser.add_argument('--verbose', '-v', action='store_true', default=False, help="more output")
+        subparser.add_argument('--quiet', '-q', action='store_true', default=False, help="less output")
 
-    parser_bump.add_argument(
-        '--all', '-a', action='store_true', default=False, help="all packages")
+    parser_bump.add_argument('--all', '-a', action='store_true', default=False, help="all packages")
     parser_bump.add_argument('packages', help="which packages", nargs="*")
-    parser_bump.add_argument(
-        '--what', '-w', help="which packages", default='last')
+    parser_bump.add_argument('--what', '-w', help="which packages", default='last')
 
     parser_release.add_argument('packages', help="which packages", nargs="*")
 
     parser_set.add_argument('packages', help="which packages", nargs="*")
 
-    parser_conda_forge_init.add_argument(
-        'packages', help="which packages", nargs="*")
-    parser_conda_forge_init.add_argument(
-        '--repo', '-w', help="forked repo for staged-recipes", default=None)
+    parser_conda_forge_init.add_argument('packages', help="which packages", nargs="*")
+    parser_conda_forge_init.add_argument('--repo', '-w', help="forked repo for staged-recipes", default=None)
 
     args = parser.parse_args(argv[1:])
 
