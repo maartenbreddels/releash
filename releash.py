@@ -68,6 +68,8 @@ def ask(question, default):
     return input(question + ' default: \'' + default + '\': ') or default
 
 def is_available(cmd):
+    if verbose:
+        print('test command: ', cmd)
     return os.system(cmd + ' ' +_to_null) == 0
 
 def debug(msg, *args, **kwargs):
@@ -85,9 +87,10 @@ def green(text):
 
 
 def test(cmd):
+    cmd = cmd + ' ' +_to_null
     if verbose:
         print(cmd)
-    return os.system(cmd + ' ' +_to_null) == 0
+    return os.system(cmd) == 0
 
 def execute(cmd):
     if interactive:
