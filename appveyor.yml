@@ -19,9 +19,8 @@ install:
   - conda config --set always_yes yes --set changeps1 no
   - conda update -q conda
   - conda info -a
-  - "conda create -q -n test-environment python=%PYTHON_VERSION%"
-  - activate test-environment
-  - pip install -r requirements.txt
+  - "conda create -q -n test python=%PYTHON_VERSION%"
+  - activate test
   - pip install -e .
 
 test_script:
