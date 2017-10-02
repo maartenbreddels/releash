@@ -329,7 +329,7 @@ class ReleaseTargetGitPush:
             cmd = "git push {repository} {refspec} && git push {repository}--tags"
         execute(cmd.format(repository=self.repository, refspec=self.refspec))
 
-def replace_in_file(filename, *replacements, dry_run=False):
+def replace_in_file(filename, *replacements):
     newlines = []
     found = [False] * len(replacements)
     with open(filename) as f:
@@ -475,7 +475,7 @@ class Package:
         untracked = self.count_untracked_files()
         if untracked:
             status += '|' + red('%d untracked files' % untracked)
-        print('{name}:\t{status}'.format(**self.__dict__, status=status))
+        print('{name}:\t{status}'.format(status=status, **self.__dict__))
         if verbose:
             print('Untracked files:')
             cmd = 'git ls-files --other --exclude-standard --directory {path}'.format(path=self.path)
