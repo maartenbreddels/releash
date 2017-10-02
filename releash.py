@@ -370,7 +370,7 @@ class ReleaseTargetGitPush:
         if force:
             cmd = "git push {repository} {refspec} --force && git push {repository} --tags --force"
         else:
-            cmd = "git push {repository} {refspec} && git push {repository}--tags"
+            cmd = "git push {repository} {refspec} && git push {repository} --tags"
         execute(cmd.format(repository=self.repository, refspec=self.refspec))
 
 
