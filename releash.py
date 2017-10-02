@@ -1,30 +1,35 @@
 #!/usr/bin/env python
 from __future__ import print_function
-import sys, os, imp, re
-import shutil
-import pkg_resources
-import hashlib
 from contextlib import contextmanager
+import hashlib
+import imp
+import os
+import pkg_resources
+import re
+import shutil
+import sys
 import tempfile
-import semver
 import time
+
+import semver
+
 try:
-    from urllib import urlretrieve # py2
+    from urllib import urlretrieve  # py2
     HTTPError = Exception
 except ImportError:
-    from urllib.request import urlretrieve # py3
+    from urllib.request import urlretrieve  # py3
     from urllib.error import HTTPError
 
 __version_tuple__ = (0, 1, 4, None, None)
 __version__ = '0.1.4'
 
 try:
-    input = raw_input # py2/3
+    input = raw_input  # py2/3
 except NameError:
     pass
 
 dry_run = False
-force = False # force commands, such as tagging
+force = False  # force commands, such as tagging
 verbose = False
 quiet = False
 interactive = False
