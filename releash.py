@@ -31,7 +31,7 @@ interactive = False
 semver_bump = [semver.bump_major, semver.bump_minor, semver.bump_patch, semver.bump_prerelease, semver.bump_build]
 
 
-_to_null = '2> nul' if os.name == 'nt' else '&> /dev/null'
+_to_null = ' > nul 2>&1' if os.name == 'nt' else ' &> /dev/null'
 
 def error(msg, *args, **kwargs):
     print(msg.format(*args, **kwargs))
