@@ -14,8 +14,8 @@ except ImportError:
     from urllib.request import urlretrieve # py3
     from urllib.error import HTTPError
 
-__version_tuple__ = (0, 1, 1, None, None)
-__version__ = '0.1.1'
+__version_tuple__ = (0, 1, 2, None, None)
+__version__ = '0.1.2'
 
 try:
     input = raw_input # py2/3
@@ -261,7 +261,7 @@ class VersionTarget(object):
                 with open(self.version_file, 'w') as f:
                     f.write(''.join(newlines))
         info('wrote to {}', self.version_file)
-        execute('git commit -m \'Bumped version to {version}\' {files}'.format(version=self.version_source, files=self.version_file))
+        execute('git commit -m \'Release {version}\' {files}'.format(version=self.version_source, files=self.version_file))
 
 class ReleaseTargetGitTagVersion(object):
     def __init__(self, version_source, prefix='v', postfix='', annotate=True, msg='Release {version}'):
