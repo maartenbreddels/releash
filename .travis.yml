@@ -24,7 +24,7 @@ before_install:
 install:
   - source activate test
   - pip install .
- cript:
+script:
   - hash -r
   - releash status -v
   - releash bump --what=major -n
