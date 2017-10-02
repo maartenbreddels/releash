@@ -143,7 +143,7 @@ def execute_always(cmd):
 
 @contextmanager
 def backupped(filename):
-    backup = filename+'.backup'
+    backup = filename + '.backup'
     shutil.copy(filename, backup)
     try:
         yield
@@ -192,13 +192,12 @@ class VersionSource(object):
         if self.bumped:
             debug('version already bumped, don\'t do it twice')
             return
-        old_version = self.version
         old = semver.format_version(*self.version)
         types = ['major', 'minor', 'patch', 'prerelease', 'build']
         if what == "last":
             # count how many non None parts there are
             parts = len([k for k in self.version if k is not None])
-            new = semver_bump[parts-1](old)
+            new = semver_bump[parts - 1](old)
         elif what in types:
             new = semver_bump[types.index(what)](old)
         else:
@@ -219,9 +218,6 @@ class VersionSourceAndTargetHpp(VersionSource):
 
     def find_version(self):
         version = [None] * 5
-        minor = None
-        patch = None
-
         with open(self.version_file) as f:
             for line in f.readlines():
                 line = line.strip().lower()
@@ -280,6 +276,8 @@ class VersionTarget(object):
                     version_found = True
                 if re.match('__version_tuple__.*', line):
                     version_tuple_found = True
+        if not (version_found and version_tuple_found):
+            error("did not find __version__ and __version_tuple__ in {}", self.version_file)
 
     def save(self):
         if self.version_source is None:
@@ -347,6 +345,7 @@ class ReleaseTargetGitTagVersion(object):
         else:
             execute(cmd)
         self.tagged = True
+
 
 class ReleaseTargetSourceDist:
 
@@ -497,7 +496,7 @@ class Package:
         print("\t" * indent +
               "package_name: {package_name}".format(**self.__dict__))
         print("\t" * indent + "version: ")
-        self.version_source.print(indent=indent+1)
+        self.version_source.print(indent=indent + 1)
 
     def release(self, last_package):
         for release_target in self.release_targets:
@@ -600,7 +599,7 @@ def main(argv=sys.argv):
 
     parser_status = subparsers.add_parser(
         'status', help='list packages\' status')
-    parser_list = subparsers.add_parser('list', help='list packages')
+    subparsers.add_parser('list', help='list packages')
     parser_set = subparsers.add_parser('set', help='set versions')
     parser_bump = subparsers.add_parser('bump', help='bump version nr')
     parser_release = subparsers.add_parser('release', help='release software')
