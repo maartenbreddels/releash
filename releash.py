@@ -407,7 +407,7 @@ class ReleaseTargetCondaForge:
             ('{% set version =', '{%% set version = "%s" %%}' % version),
             ('{% set sha256 =', '{%% set sha256 = "%s" %%}' % hash_sha256))
 
-        cmd = 'cd {feedstock_path}; git commit -am "Update to version {version}'".format(version=version, **self.__dict__)
+        cmd = 'cd {feedstock_path}; git commit -am "Update to version {version}"'.format(version=version, **self.__dict__)
         execute(cmd)
 
         cmd = 'cd {feedstock_path}; git push origin {branch}'.format(**self.__dict__)
