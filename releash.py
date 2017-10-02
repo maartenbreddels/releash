@@ -2,8 +2,15 @@
 import sys, os, imp, re
 import shutil
 from contextlib import contextmanager
-
+import tempfile
 import semver
+import time
+try:
+    from urllib import urlretrieve # py2
+    from urllib import HTTPError
+except ImportError:
+    from urllib.request import urlretrieve # py3
+    from urllib.error import HTTPError
 
 __version_tuple__ = (0, 1, 0, 'alpha.4', None)
 __version__ = '0.1.0-alpha.4'
@@ -16,6 +23,33 @@ def error(msg, *args, **kwargs):
 def expect_file(path):
     if not os.path.exists(path):
         error('Expected file {} to exists', path)
+
+@contextmanager
+def open_file(filename, mode):
+    if dry_run:
+        yield sys.stdout
+    else:
+        f = open(filename, mode)
+        yield f
+        f.close()
+
+def print_file(f, value, **kwargs):
+    print(value, file=f, **kwargs)
+
+def download(url, filename, retries=10, sleep=6):
+    i = 0
+    while i < retries:
+        try:
+            urlretrieve(url, filename)
+            return
+        except HTTPError:
+            info('failed to download {}, will try again in {} seconds', url, sleep)
+            i += 1
+            time.sleep(sleep)
+    error('could now download {}', url)
+def ask(question, default):
+    return input(question + ' default: \'' + default + '\': ') or default
+
 def is_available(cmd):
     return os.system('hub --help > /dev/null') == 0
 
