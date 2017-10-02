@@ -80,7 +80,8 @@ def green(text):
 
 
 def test(cmd):
-    #print("test:", cmd)
+    if verbose:
+        print(cmd)
     return os.system(cmd +' &> /dev/null') == 0
 
 def execute(cmd):
