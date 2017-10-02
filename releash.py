@@ -597,14 +597,12 @@ def main(argv=sys.argv):
 
     subparsers = parser.add_subparsers(help='type of command', dest="task")
 
-    parser_status = subparsers.add_parser(
-        'status', help='list packages\' status')
+    parser_status = subparsers.add_parser('status', help='list packages\' status')
     subparsers.add_parser('list', help='list packages')
     parser_set = subparsers.add_parser('set', help='set versions')
     parser_bump = subparsers.add_parser('bump', help='bump version nr')
     parser_release = subparsers.add_parser('release', help='release software')
-    parser_conda_forge_init = subparsers.add_parser(
-        'conda-forge-init', help='make a conda-forge recipe')
+    parser_conda_forge_init = subparsers.add_parser('conda-forge-init', help='make a conda-forge recipe')
 
     parser_status.add_argument('packages', help="which packages", nargs="*")
 
