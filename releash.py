@@ -226,7 +226,7 @@ class VersionSourceAndTargetHpp(VersionSource):
         else:
             print("would write\n:" + ''.join(newlines))
         info('wrote to {}', self.version_file)
-        execute('git commit -m \'Release {version}\' {files}'.format(version=self.version_source, files=self.version_file))
+        execute('git commit -m "Release {version}" {files}'.format(version=self.version_source, files=self.version_file))
 
 
 
@@ -301,9 +301,9 @@ class ReleaseTargetGitTagVersion(object):
         tag = str(self)
         if self.annotate:
             msg = self.msg.format(version=self.version_source)
-            cmd = "git tag -a {tag} -m '{msg}'".format(tag=tag, msg=msg)
+            cmd = 'git tag -a {tag} -m "{msg}"'.format(tag=tag, msg=msg)
         else:
-            cmd = "git tag %s" % tag
+            cmd = 'git tag %s' % tag
         if force:
             cmd += " -f"
         if dry_run:
