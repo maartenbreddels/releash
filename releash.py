@@ -30,6 +30,9 @@ quiet = False
 interactive = False
 semver_bump = [semver.bump_major, semver.bump_minor, semver.bump_patch, semver.bump_prerelease, semver.bump_build]
 
+
+_to_null = '2> null' if os.name == 'nt' else '&> /dev/null'
+
 def error(msg, *args, **kwargs):
     print(msg.format(*args, **kwargs))
     sys.exit(-1)
@@ -65,7 +68,7 @@ def ask(question, default):
     return input(question + ' default: \'' + default + '\': ') or default
 
 def is_available(cmd):
-    return os.system('hub --help > /dev/null') == 0
+    return os.system(cmd + ' ' +_to_null) == 0
 
 def debug(msg, *args, **kwargs):
     if verbose:
@@ -84,7 +87,7 @@ def green(text):
 def test(cmd):
     if verbose:
         print(cmd)
-    return os.system(cmd +' &> /dev/null') == 0
+    return os.system(cmd + ' ' +_to_null) == 0
 
 def execute(cmd):
     if interactive:
