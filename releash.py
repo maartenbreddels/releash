@@ -421,12 +421,6 @@ class ReleaseTargetCondaForge:
     def do(self, last_package):
         source_tarball_filename = self.source_tarball_filename
         version = str(self.package.version_source)
-        if self.source_tarball_filename.startswith('http'):
-            fileno, filename = tempfile.mkstemp()
-            debug('will download {} to {}',
-                  self.source_tarball_filename, filename)
-            download(self.source_tarball_filename, filename)
-            source_tarball_filename = filename
         if self.source_tarball_filename is None:
             # this is what setuptools does
             version_unnormalized = str(self.package.version_source)
@@ -435,9 +429,15 @@ class ReleaseTargetCondaForge:
             version = version_normalized
             debug('normalized version from {} to {}',
                   version_unnormalized, version_normalized)
-            os.path.join(self.package.path, 'dist', self.package.name +
+            source_tarball_filename = os.path.join(self.package.path, 'dist', self.package.name +
                          '-' + version_normalized + '.tar.gz')
 
+        if source_tarball_filename.startswith('http'):
+            fileno, filename = tempfile.mkstemp()
+            debug('will download {} to {}',
+                  self.source_tarball_filename, filename)
+            download(self.source_tarball_filename, filename)
+            source_tarball_filename = filename
         expect_file(source_tarball_filename)
         with open(source_tarball_filename, 'rb') as f:
             hash_sha256 = hashlib.sha256(f.read()).hexdigest()
