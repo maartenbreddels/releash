@@ -39,3 +39,9 @@
     To git@github.com:maartenbreddels/releash.git
      * [new tag]         v0.1.6 -> v0.1.6
     ```
+
+* Workflow for monorepo (example with multiple packages)
+  * `releash status`  # will show which of your packages is dirty (say foo and bar)
+  * `git commit -a -m 'very important thing... ' packages/foo/ packages/bar` # commit just these two directories
+  * `releash bump --what=minor foo bar`  # will update the version files for foo and bar, and commit and tag it
+  * `release release foo bar` # will upload to pypi, push to origin, update the conda-forge recipe, and make a PR
