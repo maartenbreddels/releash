@@ -298,6 +298,8 @@ class VersionTarget(object):
             with backupped(self.version_file):
                 with open(self.version_file, 'w') as f:
                     f.write(''.join(newlines))
+        else:
+            print("would write:\n" + ''.join(newlines))
         info('wrote to {}', self.version_file)
         execute('git commit -m "Release {version}" {files}'.format(
             version=self.version_source, files=self.version_file))
