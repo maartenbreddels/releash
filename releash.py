@@ -455,6 +455,7 @@ class ReleaseTargetCondaForge:
 
         filename = os.path.join(self.feedstock_path, 'recipe', 'meta.yaml')
         replace_in_file(filename,
+                        ('  number:.*', '  number: 0'),
                         ('{% set version =', '{%% set version = "%s" %%}' % version),
                         ('{% set sha256 =', '{%% set sha256 = "%s" %%}' % hash_sha256))
 
