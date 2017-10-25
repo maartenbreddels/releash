@@ -203,7 +203,7 @@ class VersionSource(object):
         else:
             error("unknown what: {}", what)
         debug("version was {}, is now {}", old, new)
-        self.version = semver.parse_version_info(new)
+        self.version = [k for k in semver.parse_version_info(new) if k is not None]
         self.bumped = True
 
 
