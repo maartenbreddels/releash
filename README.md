@@ -5,7 +5,7 @@
  * Supports conda-forge (making pull requests and updating recipes)
  * It can bump version numbers in python file, c header files using semantic versioning, e.g. `releash bump`:
      ```bash
-     $ releash bumb
+     $ releash bump`
      version was 0.1.5, is now 0.1.6
      wrote to releash.py
      git commit -m "Release 0.1.6" releash.py
