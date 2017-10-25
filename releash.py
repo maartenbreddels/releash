@@ -20,7 +20,7 @@ except ImportError:
     from urllib.request import urlretrieve  # py3
     from urllib.error import HTTPError
 
-__version_tuple__ = (0, 1, 5, None, None)
+__version_tuple__ = (0, 1, 5)
 __version__ = '0.1.5'
 
 try:
@@ -202,7 +202,7 @@ class VersionSource(object):
             new = semver_bump[types.index(what)](old)
         else:
             error("unknown what: {}", what)
-        debug("version was {}, is now {}", old, new)
+        info("version was {}, is now {}", old, new)
         self.version = [k for k in semver.parse_version_info(new) if k is not None]
         self.bumped = True
 
