@@ -542,6 +542,7 @@ class Package:
         self.version_source = None  # version_source or VersionSource(self)
         self.version_targets = version_targets or []
         self.release_targets = []
+        self.filenames = filenames # files to track to see if dirty
 
     def print(self, indent=0):
         print("\t" * indent + "name: {name}".format(**self.__dict__))
@@ -563,7 +564,10 @@ class Package:
         return tag[0]
 
     def is_clean(self):
-        return test('git diff --exit-code {path}'.format(**self.__dict__))
+        if self.filenames:
+            return test('git diff --exit-code ' + ' '.join(self.filenames))
+        else:
+            return test('git diff --exit-code {path}'.format(**self.__dict__))
 
     def count_untracked_files(self):
         cmd = 'git ls-files --other --exclude-standard --directory {path}'.format(
