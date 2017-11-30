@@ -398,6 +398,15 @@ class ReleaseTargetSourceDist:
             **self.package.__dict__)
         execute(cmd)
 
+class ReleaseTargetNpm:
+
+    def __init__(self, package):
+        self.package = package
+
+    def do(self, last_package):
+        cmd = "cd {path} && npm publish".format(
+            **self.package.__dict__)
+        execute(cmd)
 
 class ReleaseTargetGitPush:
 
