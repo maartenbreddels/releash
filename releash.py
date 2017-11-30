@@ -477,15 +477,16 @@ class ReleaseTargetCondaForge:
             version = version_normalized
             debug('normalized version from {} to {}',
                   version_unnormalized, version_normalized)
-            source_tarball_filename = os.path.join(self.package.path, 'dist', self.package.name +
+            source_tarball_filename = os.path.join(self.package.path, 'dist', self.package.distribution_name +
                          '-' + version_normalized + '.tar.gz')
 
         if source_tarball_filename.startswith('http'):
             fileno, filename = tempfile.mkstemp()
-            debug('will download {} to {}',
+            info('will download {} to {}',
                   self.source_tarball_filename, filename)
             download(self.source_tarball_filename, filename)
             source_tarball_filename = filename
+
         expect_file(source_tarball_filename)
         with open(source_tarball_filename, 'rb') as f:
             hash_sha256 = hashlib.sha256(f.read()).hexdigest()
@@ -528,10 +529,11 @@ class ReleaseTargetCondaForge:
 
 class Package:
 
-    def __init__(self, path, name, package_name=None, version_source=None, version_targets=None):
+    def __init__(self, path, name, distribution_name=None, package_name=None, version_source=None, version_targets=None, filenames=None):
         self.path = path
         self.abspath = os.path.abspath(path)
         self.name = name
+        self.distribution_name = distribution_name or name
         self.package_name = package_name
         self.package_path = None
         if package_name is not None:
@@ -614,10 +616,10 @@ class Package:
             target.save()
 
 
-def add_package(path, name=None, package_name=None, version_source=None):
+def add_package(path, name=None, package_name=None, distribution_name=None, version_source=None, filenames=None):
     name = name or os.path.split(path)[-1]
     package_name = package_name or name
-    package = Package(path, name, package_name, version_source=version_source)
+    package = Package(path, name, distribution_name=distribution_name, package_name=package_name, version_source=version_source, filenames=filenames)
     packages.append(package)
     package_names.append(name)
     package_map[name] = package
