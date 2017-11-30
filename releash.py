@@ -20,8 +20,8 @@ except ImportError:
     from urllib.request import urlretrieve  # py3
     from urllib.error import HTTPError
 
-__version_tuple__ = (0, 1, 7)
-__version__ = '0.1.7'
+__version_tuple__ = (0, 2, 0)
+__version__ = '0.2.0'
 
 try:
     input = raw_input  # py2/3
