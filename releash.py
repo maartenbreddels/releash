@@ -20,8 +20,8 @@ except ImportError:
     from urllib.request import urlretrieve  # py3
     from urllib.error import HTTPError
 
-__version_tuple__ = (0, 1, 7)
-__version__ = '0.1.7'
+__version_tuple__ = (0, 2, 0)
+__version__ = '0.2.0'
 
 try:
     input = raw_input  # py2/3
@@ -163,8 +163,9 @@ package_names = []
 
 class VersionSource(object):
 
-    def __init__(self, package, version_file=None):
+    def __init__(self, package, version_file=None, tuple_variable_name='__version_tuple__'):
         self.package = package
+        self.tuple_variable_name = tuple_variable_name
         # if version_file is None:
         self.version_file = version_file or os.path.join(
             self.package.package_path, "_version.py")
@@ -174,12 +175,12 @@ class VersionSource(object):
 
     def find_version(self):
         self.version_module = imp.load_source('version', self.version_file)
-        self.version = self.version_module.__version_tuple__
-        version_string = self.version_module.__version__
-        semver_string = semver.format_version(*self.version)
-        if semver_string != version_string:
-            error('semver formats your version as %r, while you format it as %r, please fix this'
-                  % (semver_string, version_string))
+        self.version = getattr(self.version_module, self.tuple_variable_name)
+        # version_string = self.version_module.__version__
+        # semver_string = semver.format_version(*self.version)
+        # if semver_string != version_string:
+        #     error('semver formats your version as %r, while you format it as %r, please fix this'
+        #           % (semver_string, version_string))
 
     def __str__(self):
         return semver.format_version(*self.version)
@@ -262,17 +263,55 @@ class VersionSourceAndTargetHpp(VersionSource):
         execute('git commit -m "Release {version}" {files}'.format(
             version=self.version_source, files=self.version_file))
 
+import json
+import collections
+
+class VersionTargetJson(object):
+    def __init__(self, package, json_file, key='version', indent=2):
+        self.package = package
+        self.json_file = json_file.format(**self.package.__dict__)
+        self.key = key
+        self.version_source = None
+        self.indent = indent
+
+    def save(self):
+        if self.version_source is None:
+            error('no version set')
+        with open(self.json_file, 'r') as f:
+            values = json.JSONDecoder(object_pairs_hook=collections.OrderedDict).decode(f.read())
+        value = values
+        names = self.key.split('.')
+        head = names[-1]
+        tail = names[:-1]
+        for name in tail:
+            value = values[name]
+        value[head] = str(self.version_source)
+        dump = json.dumps(values, indent=self.indent)
+        if not dry_run:
+            with backupped(self.json_file):
+                with open(self.json_file, 'w') as f:
+                    f.write(dump)
+        else:
+            print("would write:\n" + dump)
+        info('wrote to {}', self.json_file)
+        execute('git commit -m "Release {version}" {files}'.format(
+            version=self.version_source, files=self.json_file))
+
+
 
 class VersionTarget(object):
 
-    def __init__(self, package, version_file=None):
+    def __init__(self, package, version_file=None, tuple_variable_name='__version_tuple__', string_variable_name='__version__'):
         self.package = package
         # if version_file is None:
         self.version_file = version_file or os.path.join(
             self.package.package_path, "_version.py")
         self.version_file = self.version_file.format(**self.package.__dict__)
+        self.tuple_variable_name = tuple_variable_name
+        self.string_variable_name = string_variable_name
         self.validate_file()
         self.version_source = None
+
 
     def validate_file(self):
         version_found = False
@@ -280,12 +319,12 @@ class VersionTarget(object):
         with open(self.version_file) as f:
             lines = f.readlines()
             for line in lines:
-                if re.match('__version__.*', line):
+                if re.match(self.string_variable_name + '.*', line):
                     version_found = True
-                if re.match('__version_tuple__.*', line):
+                if re.match(self.tuple_variable_name + '.*', line):
                     version_tuple_found = True
         if not (version_found and version_tuple_found):
-            error("did not find __version__ and __version_tuple__ in {}", self.version_file)
+            error("did not find " +self.string_variable_name +" and " +self.tuple_variable_name +" in {}", self.version_file)
 
     def save(self):
         if self.version_source is None:
@@ -294,11 +333,11 @@ class VersionTarget(object):
         with open(self.version_file) as f:
             lines = f.readlines()
             for line in lines:
-                if re.match('__version__.*', line):
-                    newlines.append('__version__ = %r\n' %
+                if re.match(self.string_variable_name + '.*', line):
+                    newlines.append(self.string_variable_name + ' = %r\n' %
                                     str(self.version_source))
-                elif re.match('__version_tuple__.*', line):
-                    newlines.append('__version_tuple__ = %r\n' %
+                elif re.match(self.tuple_variable_name + '.*', line):
+                    newlines.append(self.tuple_variable_name + ' = %r\n' %
                                     (tuple(self.version_source.version),))
                 else:
                     newlines.append(line)
@@ -367,6 +406,15 @@ class ReleaseTargetSourceDist:
             **self.package.__dict__)
         execute(cmd)
 
+class ReleaseTargetNpm:
+
+    def __init__(self, package):
+        self.package = package
+
+    def do(self, last_package):
+        cmd = "cd {path} && npm publish".format(
+            **self.package.__dict__)
+        execute(cmd)
 
 class ReleaseTargetGitPush:
 
@@ -437,15 +485,16 @@ class ReleaseTargetCondaForge:
             version = version_normalized
             debug('normalized version from {} to {}',
                   version_unnormalized, version_normalized)
-            source_tarball_filename = os.path.join(self.package.path, 'dist', self.package.name +
+            source_tarball_filename = os.path.join(self.package.path, 'dist', self.package.distribution_name +
                          '-' + version_normalized + '.tar.gz')
 
         if source_tarball_filename.startswith('http'):
             fileno, filename = tempfile.mkstemp()
-            debug('will download {} to {}',
+            info('will download {} to {}',
                   self.source_tarball_filename, filename)
             download(self.source_tarball_filename, filename)
             source_tarball_filename = filename
+
         expect_file(source_tarball_filename)
         with open(source_tarball_filename, 'rb') as f:
             hash_sha256 = hashlib.sha256(f.read()).hexdigest()
@@ -488,10 +537,11 @@ class ReleaseTargetCondaForge:
 
 class Package:
 
-    def __init__(self, path, name, package_name=None, version_source=None, version_targets=None):
+    def __init__(self, path, name, distribution_name=None, package_name=None, version_source=None, version_targets=None, filenames=None):
         self.path = path
         self.abspath = os.path.abspath(path)
         self.name = name
+        self.distribution_name = distribution_name or name
         self.package_name = package_name
         self.package_path = None
         if package_name is not None:
@@ -500,6 +550,7 @@ class Package:
         self.version_source = None  # version_source or VersionSource(self)
         self.version_targets = version_targets or []
         self.release_targets = []
+        self.filenames = filenames # files to track to see if dirty
 
     def print(self, indent=0):
         print("\t" * indent + "name: {name}".format(**self.__dict__))
@@ -521,7 +572,10 @@ class Package:
         return tag[0]
 
     def is_clean(self):
-        return test('git diff --exit-code {path}'.format(**self.__dict__))
+        if self.filenames:
+            return test('git diff --exit-code ' + ' '.join(self.filenames))
+        else:
+            return test('git diff --exit-code {path}'.format(**self.__dict__))
 
     def count_untracked_files(self):
         cmd = 'git ls-files --other --exclude-standard --directory {path}'.format(
@@ -574,10 +628,10 @@ class Package:
             target.save()
 
 
-def add_package(path, name=None, package_name=None, version_source=None):
+def add_package(path, name=None, package_name=None, distribution_name=None, version_source=None, filenames=None):
     name = name or os.path.split(path)[-1]
     package_name = package_name or name
-    package = Package(path, name, package_name, version_source=version_source)
+    package = Package(path, name, distribution_name=distribution_name, package_name=package_name, version_source=version_source, filenames=filenames)
     packages.append(package)
     package_names.append(name)
     package_map[name] = package
@@ -631,7 +685,7 @@ def main(argv=sys.argv):
 
     parser_bump.add_argument('--all', '-a', action='store_true', default=False, help="all packages")
     parser_bump.add_argument('packages', help="which packages", nargs="*")
-    parser_bump.add_argument('--what', '-w', help="which packages", default='last')
+    parser_bump.add_argument('--what', '-w', help="'major', 'minor', 'patch', 'prerelease', 'build' or 'last'", default='last')
 
     parser_release.add_argument('packages', help="which packages", nargs="*")
 
