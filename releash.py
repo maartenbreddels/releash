@@ -192,6 +192,11 @@ class VersionSource(object):
         if self.bumped:
             debug('version already bumped, don\'t do it twice')
             return
+        if '=' in what:
+            what, what_name = what.split('=')
+        else:
+            what, what_name = what, None
+
         old = semver.format_version(*self.version)
         types = ['major', 'minor', 'patch', 'prerelease', 'build']
         if what == "last":
@@ -199,7 +204,10 @@ class VersionSource(object):
             parts = len([k for k in self.version if k is not None])
             new = semver_bump[parts - 1](old)
         elif what in types:
-            new = semver_bump[types.index(what)](old)
+            if what_name:
+                new = semver_bump[types.index(what)](old, what_name)
+        else:
+                new = semver_bump[types.index(what)](old)
         else:
             error("unknown what: {}", what)
         info("version was {}, is now {}", old, new)
