@@ -677,7 +677,7 @@ def main(argv=sys.argv):
 
     parser_bump.add_argument('--all', '-a', action='store_true', default=False, help="all packages")
     parser_bump.add_argument('packages', help="which packages", nargs="*")
-    parser_bump.add_argument('--what', '-w', help="which packages", default='last')
+    parser_bump.add_argument('--what', '-w', help="'major', 'minor', 'patch', 'prerelease', 'build' or 'last'", default='last')
 
     parser_release.add_argument('packages', help="which packages", nargs="*")
 
