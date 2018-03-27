@@ -392,10 +392,12 @@ class ReleaseTargetGitTagVersion(object):
             error('no version set for tagging')
         tag = str(self)
         if self.annotate:
-            msg = self.msg.format(version=self.version_source)
-            cmd = 'git tag -a {tag} -m "{msg}"'.format(tag=tag, msg=msg)
+            cmd = 'git tag -a {tag}'.format(tag=tag)
         else:
             cmd = 'git tag %s' % tag
+        if self.msg is not None:
+            msg = self.msg.format(version=self.version_source)
+            cmd  +=  ' -m "{msg}'.format(msg=msg)
         if force:
             cmd += " -f"
         if dry_run:
