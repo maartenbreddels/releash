@@ -204,10 +204,19 @@ class VersionSource(object):
             # count how many non None parts there are
             parts = len([k for k in self.version if k is not None])
             new = semver_bump[parts - 1](old)
+        elif what == 'finalize':
+            new = semver.finalize_version(old)
         elif what in types:
             if what_name:
-                new = semver_bump[types.index(what)](old, what_name)
-        else:
+                if what == 'prerelease': # to enable x.y.z-beta.1 -> x.y.z->rc.0
+                    old_final = semver.finalize_version(old)
+                    new = semver_bump[types.index(what)](old_final, what_name)
+                elif what in ['major', 'minor', 'patch']: # to go from 0.1.0 -> 0.2.0-beta1
+                    new = semver_bump[types.index(what)](old)
+                    new = semver.bump_prerelease(new, what_name)
+                else:
+                    new = semver_bump[types.index(what)](old, what_name)
+            else:
                 new = semver_bump[types.index(what)](old)
         else:
             error("unknown what: {}", what)
@@ -685,7 +694,7 @@ def main(argv=sys.argv):
 
     parser_bump.add_argument('--all', '-a', action='store_true', default=False, help="all packages")
     parser_bump.add_argument('packages', help="which packages", nargs="*")
-    parser_bump.add_argument('--what', '-w', help="'major', 'minor', 'patch', 'prerelease', 'build' or 'last'", default='last')
+    parser_bump.add_argument('--what', '-w', help="'major', 'minor', 'patch', 'prerelease', 'build', 'last' or 'finalize'", default='last')
 
     parser_release.add_argument('packages', help="which packages", nargs="*")
 
