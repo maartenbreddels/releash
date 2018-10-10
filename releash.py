@@ -222,8 +222,8 @@ class VersionSource(object):
             error("unknown what: {}", what)
         info("version was {}, is now {}", old, new)
         semver_new = semver.parse_version_info(new)
-        semver_split = [semver_new.bump_major, semver_new.bump_minor,
-                        semver_new.bump_patch, semver_new.bump_prerelease, semver_new.bump_build]
+        semver_split = [semver_new.major, semver_new.minor,
+                        semver_new.patch, semver_new.prerelease, semver_new.build]
         self.version = [k for k in semver_split if k is not None]
         self.bumped = True
 
