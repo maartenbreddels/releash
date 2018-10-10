@@ -5,7 +5,7 @@
  * Supports conda-forge (making pull requests and updating recipes)
  * It can bump version numbers in python file, c header files using semantic versioning, e.g. `releash bump`:
      ```bash
-     $ releash bump`
+     $ releash bump
      version was 0.1.5, is now 0.1.6
      wrote to releash.py
      git commit -m "Release 0.1.6" releash.py
@@ -44,4 +44,4 @@
   * `releash status`  # will show which of your packages is dirty (say foo and bar)
   * `git commit -a -m 'very important thing... ' packages/foo/ packages/bar` # commit just these two directories
   * `releash bump --what=minor foo bar`  # will update the version files for foo and bar, and commit and tag it
-  * `release release foo bar` # will upload to pypi, push to origin, update the conda-forge recipe, and make a PR
+  * `releash release foo bar` # will upload to pypi, push to origin, update the conda-forge recipe, and make a PR
