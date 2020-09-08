@@ -20,8 +20,8 @@ except ImportError:
     from urllib.request import urlretrieve  # py3
     from urllib.error import HTTPError
 
-__version_tuple__ = (0, 3, 0)
-__version__ = '0.3.0'
+__version_tuple__ = (0, 4, 0)
+__version__ = '0.4.0'
 
 try:
     input = raw_input  # py2/3
@@ -176,6 +176,8 @@ class VersionSource(object):
     def find_version(self):
         self.version_module = imp.load_source('version', self.version_file)
         self.version = getattr(self.version_module, self.tuple_variable_name)
+        self.semver = semver.parse(str(self))
+        self.version_previous = self.version
         # version_string = self.version_module.__version__
         # semver_string = semver.format_version(*self.version)
         # if semver_string != version_string:
@@ -217,11 +219,15 @@ class VersionSource(object):
                 else:
                     new = semver_bump[types.index(what)](old, what_name)
             else:
+                if old.endswith("dev") and what == 'prerelease':
+                    old = old + ".0"
                 new = semver_bump[types.index(what)](old)
         else:
             error("unknown what: {}", what)
         info("version was {}, is now {}", old, new)
-        self.version = [k for k in semver.parse_version_info(new) if k is not None]
+        ver = semver.parse_version_info(new)
+        vtuple = (ver.major, ver.minor, ver.patch, ver.prerelease, ver.build)
+        self.version = [k for k in vtuple if k is not None]
         self.bumped = True
 
 
@@ -269,8 +275,8 @@ class VersionSourceAndTargetHpp(VersionSource):
         else:
             print("would write\n:" + ''.join(newlines))
         info('wrote to {}', self.version_file)
-        execute('git commit -m "Release {version}" {files}'.format(
-            version=self.version_source, files=self.version_file))
+        execute('git commit -m "Release {version}"'.format(
+            version=self.version_source))
 
 import json
 import collections
@@ -357,8 +363,44 @@ class VersionTarget(object):
         else:
             print("would write:\n" + ''.join(newlines))
         info('wrote to {}', self.version_file)
-        execute('git commit -m "Release {version}" {files}'.format(
-            version=self.version_source, files=self.version_file))
+        execute('git add {files}'.format(files=self.version_file))
+
+
+
+class VersionTargetReplace(object):
+
+    def __init__(self, package, targets=None, pattern='{name}(?P<cmp>[^0-9]*^,)([0-9\.^,].*)', replacement='{name}\g<cmp>{version}'):
+        self.package = package
+        # if version_file is None:
+        self.targets = targets
+        self.pattern = pattern
+        self.replacement = replacement
+        # self.version_file = self.version_file.format(**self.package.__dict__)
+        # self.tuple_variable_name = tuple_variable_name
+        # self.string_variable_name = string_variable_name
+        # self.validate_file()
+        self.version_source = None
+
+
+    def save(self):
+        if self.version_source is None:
+            error('no version set')
+        pattern = self.pattern.format(name=self.package.name)
+        replacement = self.replacement.format(name=self.package.name, version=str(self.version_source))
+        for filename in self.targets:
+            with open(filename) as f:
+                content = f.read()
+            content_new = re.sub(pattern, replacement, content)
+            if content != content_new:
+                if not dry_run:
+                    with backupped(filename):
+                        with open(filename, "w") as f:
+                            f.write(content_new)
+                    print(f"{filename} updated")
+                else:
+                    print("would write:\n" + ''.join(content_new))
+                info('wrote to {}', filename)
+        execute('git add {files}'.format(files=' '.join(self.targets)))
 
 
 class ReleaseTargetGitTagVersion(object):
@@ -397,7 +439,7 @@ class ReleaseTargetGitTagVersion(object):
             cmd = 'git tag %s' % tag
         if self.msg is not None:
             msg = self.msg.format(version=self.version_source)
-            cmd  +=  ' -m "{msg}'.format(msg=msg)
+            cmd  +=  ' -m "{msg}"'.format(msg=msg)
         if force:
             cmd += " -f"
         if dry_run:
@@ -406,15 +448,23 @@ class ReleaseTargetGitTagVersion(object):
             execute(cmd)
         self.tagged = True
 
-
 class ReleaseTargetSourceDist:
 
-    def __init__(self, package):
+    def __init__(self, package, universal_wheel=False):
         self.package = package
+        self.universal_wheel = universal_wheel
 
     def do(self, last_package):
-        cmd = "cd {path} && python setup.py sdist upload".format(
+        cmd = "cd {path} && python setup.py sdist".format(
             **self.package.__dict__)
+        execute(cmd)
+        if self.universal_wheel:
+            cmd = "cd {path} && python setup.py bdist_wheel --universal".format(
+                **self.package.__dict__)
+            execute(cmd)
+        source_tarball_filename = self.package.python_package_dist_files(absolute=False)
+        cmd = "cd {path} && twine upload dist/{source_tarball_filename}".format(**self.package.__dict__,
+            source_tarball_filename=source_tarball_filename)
         execute(cmd)
 
 class ReleaseTargetNpm:
@@ -561,7 +611,20 @@ class Package:
         self.version_source = None  # version_source or VersionSource(self)
         self.version_targets = version_targets or []
         self.release_targets = []
+        self.tag_targets = []
         self.filenames = filenames # files to track to see if dirty
+
+    def python_package_dist_files(self, absolute=True):
+        version_unnormalized = str(self.version_source)
+        version_normalized = pkg_resources.safe_version(version_unnormalized)
+        version = version_normalized
+        if absolute:
+            source_tarball_filename = os.path.join(self.path, 'dist', self.distribution_name +
+                     '-' + version_normalized + '*')
+        else:
+            source_tarball_filename = self.distribution_name + '-' + version_normalized + '*'
+        return source_tarball_filename
+
 
     def print(self, indent=0):
         print("\t" * indent + "name: {name}".format(**self.__dict__))
@@ -577,7 +640,7 @@ class Package:
 
     def get_tag_target(self):
         # this should move as well, too git specific
-        tag = [k for k in self.release_targets if isinstance(
+        tag = [k for k in self.tag_targets if isinstance(
             k, ReleaseTargetGitTagVersion)]
         assert len(tag) == 1, "no tag target set"
         return tag[0]
@@ -637,6 +700,12 @@ class Package:
             target.version_source = self.version_source
         for target in self.version_targets:
             target.save()
+        execute('git commit -m "Release {version} of {name}"'.format(
+            version=self.version_source, name=self.name))
+
+    def tag(self, last):
+        for tag_target in self.tag_targets:
+            tag_target.do(last_package=last)
 
 
 def add_package(path, name=None, package_name=None, distribution_name=None, version_source=None, filenames=None):
@@ -672,10 +741,10 @@ def main(argv=sys.argv):
 
     subparsers = parser.add_subparsers(help='type of command', dest="task")
 
-    parser_status = subparsers.add_parser('status', help='list packages\' status')
-    subparsers.add_parser('list', help='list packages')
-    parser_set = subparsers.add_parser('set', help='set versions')
-    parser_bump = subparsers.add_parser('bump', help='bump version nr')
+    parser_status  = subparsers.add_parser('status', help='list packages\' status')
+    parser_list    = subparsers.add_parser('list', help='list packages')
+    parser_set     = subparsers.add_parser('set', help='set versions')
+    parser_bump    = subparsers.add_parser('bump', help='bump version nr')
     parser_release = subparsers.add_parser('release', help='release software')
     parser_conda_forge_init = subparsers.add_parser('conda-forge-init', help='make a conda-forge recipe')
 
@@ -690,7 +759,7 @@ def main(argv=sys.argv):
                                default=False, help="force actions (such as tagging)")
         subparser.add_argument('--interactive', '-i', action='store_true',
                                default=False, help="ask for confirmation before running")
-    for subparser in action_subparsers + [parser_status]:
+    for subparser in action_subparsers + [parser_status, parser, parser_list]:
         subparser.add_argument('--verbose', '-v', action='store_true', default=False, help="more output")
         subparser.add_argument('--quiet', '-q', action='store_true', default=False, help="less output")
 
@@ -726,9 +795,11 @@ def main(argv=sys.argv):
         for package, last in package_iter(args.packages or package_names):
             package.bump(args.what)
             package.set()
+            package.tag(last)
     elif args.task == "set":
         for package, last in package_iter(args.packages or package_names):
             package.set()
+            package.tag(last)
     elif args.task == "release":
         for package, last in package_iter(args.packages or package_names):
             package.release(last)
