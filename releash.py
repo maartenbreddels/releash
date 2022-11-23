@@ -37,7 +37,7 @@ semver_bump = [semver.bump_major, semver.bump_minor,
                semver.bump_patch, semver.bump_prerelease, semver.bump_build]
 
 
-_to_null = ' > nul 2>&1' if os.name == 'nt' else ' &> /dev/null'
+_to_null = ' > nul 2>&1' if os.name == 'nt' else ' 2> /dev/null 1> /dev/null'
 
 
 def error(msg, *args, **kwargs):
