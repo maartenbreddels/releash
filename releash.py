@@ -426,6 +426,12 @@ class ReleaseTargetGitTagVersion(object):
         version_tag = str(self)
         return test('git diff --exit-code {version_tag}...HEAD {path}'.format(path=path, version_tag=version_tag))
 
+    def diff(self, path=''):
+        version_tag = str(self)
+        cmd = 'git diff --exit-code {version_tag}...HEAD {path}'.format(path=path, version_tag=version_tag)
+        print(cmd)
+        return os.system(cmd)
+
     def do(self, last_package):
         if self.tagged:
             debug('already tagged, don\'t do it twice')
@@ -658,6 +664,13 @@ class Package:
         # count non empty lines
         return len([k for k in result.split('\n') if k.strip()])
 
+    def diff(self):
+        tag = self.get_tag_target()
+        if tag.exists():
+            clean = tag.diff(path=self.path)
+        else:
+            print("No tag exists")
+
     def print_status(self):
         clean = self.is_clean()
         status = ''
@@ -742,6 +755,7 @@ def main(argv=sys.argv):
     subparsers = parser.add_subparsers(help='type of command', dest="task")
 
     parser_status  = subparsers.add_parser('status', help='list packages\' status')
+    parser_diff    = subparsers.add_parser('diff', help='Show diff since last release')
     parser_list    = subparsers.add_parser('list', help='list packages')
     parser_set     = subparsers.add_parser('set', help='set versions')
     parser_bump    = subparsers.add_parser('bump', help='bump version nr')
@@ -749,8 +763,9 @@ def main(argv=sys.argv):
     parser_conda_forge_init = subparsers.add_parser('conda-forge-init', help='make a conda-forge recipe')
 
     parser_status.add_argument('packages', help="which packages", nargs="*")
+    parser_diff.add_argument('packages', help="which packages", nargs="*")
 
-    action_subparsers = [parser_bump, parser_release,
+    action_subparsers = [parser_bump, parser_release, parser_diff,
                          parser_set, parser_conda_forge_init]
     for subparser in action_subparsers:
         subparser.add_argument('--dry-run', '-n', action='store_true',
@@ -791,6 +806,9 @@ def main(argv=sys.argv):
     elif args.task == "status":
         for package, last in package_iter(args.packages or package_names):
             package.print_status()
+    elif args.task == "diff":
+        for package, last in package_iter(args.packages or package_names):
+            package.diff()
     elif args.task == "bump":
         for package, last in package_iter(args.packages or package_names):
             package.bump(args.what)
