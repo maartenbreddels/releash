@@ -700,7 +700,7 @@ class Package:
             target.version_source = self.version_source
         for target in self.version_targets:
             target.save()
-        execute('git commit -m "Release {version} of {name}"'.format(
+        execute('git commit -m "🔖 {name} {version} released"'.format(
             version=self.version_source, name=self.name))
 
     def tag(self, last):
